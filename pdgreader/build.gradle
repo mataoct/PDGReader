@@ -1,0 +1,52 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+
+    defaultConfig {
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion rootProject.ext.minSdkVersion
+        versionCode rootProject.ext.versionCode
+        versionName rootProject.ext.versionName  //“debug版本号”跟“内测版本号”保持一致
+        multiDexEnabled true
+        resConfigs "en", "zh", "zh-rCN"
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'junit:junit:4.12'
+    api "com.android.support:support-v4:${rootProject.ext.supportLibVersion}"
+    api "com.android.support:appcompat-v7:${rootProject.ext.supportLibVersion}"
+
+    def version_lifecycle = "1.1.0"
+    def version_rxjava = "2.1.16"
+    def version_rxandroid = "2.0.2"
+
+    api "android.arch.lifecycle:runtime:$version_lifecycle"
+    api "android.arch.lifecycle:viewmodel:$version_lifecycle"
+    api "android.arch.lifecycle:livedata:$version_lifecycle"
+    api "android.arch.lifecycle:extensions:$version_lifecycle"
+    annotationProcessor "android.arch.lifecycle:compiler:$version_lifecycle"
+    api "android.arch.lifecycle:reactivestreams:$version_lifecycle"
+    implementation "io.reactivex.rxjava2:rxjava:$version_rxjava"
+    implementation "io.reactivex.rxjava2:rxandroid:$version_rxandroid"
+}
