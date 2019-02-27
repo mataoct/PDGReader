@@ -12,8 +12,9 @@ import android.view.View;
 import android.widget.ImageView;
 
 import com.chaoxing.bean.PDGBookInfo;
+import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
-import com.chaoxing.util.PdgParserEx;
+import com.chaoxing.bean.ResourceContentValue;
 import com.chaoxing.viewmodel.BookViewModel;
 
 import java.io.File;
@@ -22,10 +23,6 @@ public class MainActivity extends FragmentActivity {
     final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "chaoxing/pdgfile" + File.separator + "13788883.pdz";
     private static final String TAG = "TestLifeCircle";
     private ImageView ivShow;
-    private int currentPage = 1;
-    private int totalPage = 1;
-    private String bookKey;
-    private int bookType;
     private String uniqueId;
     private BookViewModel mBookViewModel;
 
@@ -37,15 +34,21 @@ public class MainActivity extends FragmentActivity {
         ivShow = ((ImageView) findViewById(R.id.ivShow));
 
         mBookViewModel = ViewModelProviders.of(this).get(BookViewModel.class);
-        mBookViewModel.getPDGpageInfoTest().observe(this, new Observer<PDGPageInfo>() {
+        mBookViewModel.getPDGpageInfoTest().observe(this, new Observer<PDGBookResource<PDGPageInfo>>() {
 
             @Override
-            public void onChanged(@Nullable PDGPageInfo pdgPageInfos) {
+            public void onChanged(@Nullable PDGBookResource<PDGPageInfo> pdgPageInfos) {
                 if (pdgPageInfos == null) {
                     return;
                 }
-                mBookViewModel.getBookInfo().setCurrentPage(pdgPageInfos);
-                ivShow.setImageBitmap(pdgPageInfos.getBitmap());
+                PDGPageInfo data = pdgPageInfos.getData();
+                if (data == null) {
+                    return;
+                }
+                if (pdgPageInfos.getStatus() == ResourceContentValue.RESOURCE_STATUS.SUCCESS) {
+                    mBookViewModel.getBookInfo().setCurrentPage(data);
+                    ivShow.setImageBitmap(data.getBitmap());
+                }
             }
         });
         PDGBookInfo bookInfo = mBookViewModel.getBookInfo();

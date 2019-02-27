@@ -23,7 +23,7 @@ import java.util.List;
 public class BookViewModel extends AndroidViewModel {
     private static final String TAG = "BookViewModel";
     private MediatorLiveData<List<PDGPageInfo>> mLiveDataPDGPageInfo = new MediatorLiveData<>();
-    private MediatorLiveData<PDGPageInfo> mTestPageData = new MediatorLiveData<>();
+    private MediatorLiveData<PDGBookResource<PDGPageInfo>> mTestPageData = new MediatorLiveData<>();
     private PdgParserEx mPdgParserEx;
     private PDGBookInfo mPdgBookInfo;
     private LoadFactory loadFactory;
@@ -48,12 +48,12 @@ public class BookViewModel extends AndroidViewModel {
         pdgPageInfo.setFilePath(mPdgBookInfo.getBookPath());
         pdgPageInfo.setPageNo(page);
         pdgPageInfo.setPageType(6);
-        MediatorLiveData<PDGBookResource<PDGPageInfo>> liveData = new MediatorLiveData<>();
-        liveData.addSource(loadFactory.load(pdgPageInfo, mPdgParserEx, mPdgBookInfo), new Observer<PDGBookResource<PDGPageInfo>>() {
+        mTestPageData.addSource(loadFactory.load(pdgPageInfo, mPdgParserEx, mPdgBookInfo), new Observer<PDGBookResource<PDGPageInfo>>() {
             @Override
             public void onChanged(@Nullable PDGBookResource<PDGPageInfo> pdgPageInfo) {
                 Log.i(TAG, "onChanged: "+pdgPageInfo.getStatus());
-                mTestPageData.postValue(pdgPageInfo.getData());
+                mTestPageData.removeObserver(this);
+                mTestPageData.postValue(pdgPageInfo);
             }
         });
 
