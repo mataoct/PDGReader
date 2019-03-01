@@ -4,6 +4,8 @@ import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MediatorLiveData;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.SystemClock;
+import android.util.Log;
 
 import com.chaoxing.bean.PDGBookInfo;
 import com.chaoxing.bean.PDGBookResource;
@@ -19,6 +21,7 @@ import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 public class LoadFactory {
+    private static final String TAG = LogUtils.TAG;
     private static final LoadFactory instatnce = new LoadFactory();
 
     public static LoadFactory get() {
@@ -35,6 +38,7 @@ public class LoadFactory {
         }).map(new Function<Integer, PDGPageInfo>() {
             @Override
             public PDGPageInfo apply(Integer page) throws Exception {
+                long startTime = SystemClock.currentThreadTimeMillis();
                 byte[] datas = pdgParserEx.parsePdzBuffer(pdgBookInfo.getBookPath(), pdgBookInfo.getBookKey(), 6, page, 0, 0);
                 if (datas == null) {
                     datas = pdgParserEx.parsePdzBuffer(pdgBookInfo.getBookPath(), PDGBookInfo.DEFAULT_BOOK_KEY, 6, page, 0, 0);
@@ -42,6 +46,9 @@ public class LoadFactory {
                 if (datas == null) {
                     return null;
                 }
+                long endTIme = SystemClock.currentThreadTimeMillis();
+                Log.i(TAG, "要加载的图片页码:" + pageInfo.getPageNo() + "    获取图片数据时间: " + (endTIme - startTime));
+                Log.i(TAG, "获取图片数据大小: " + FileUtils.formatFileSize(datas.length));
                 Bitmap bitmap = BitmapFactory.decodeByteArray(datas, 0, datas.length);
                 pageInfo.setBitmap(bitmap);
                 return pageInfo;
@@ -56,7 +63,7 @@ public class LoadFactory {
 
                     @Override
                     public void onNext(PDGPageInfo pdgPageInfo) {
-                       pdgBookResourceLiveData.setValue(PDGBookResource.buildSuccess(pageInfo));
+                        pdgBookResourceLiveData.setValue(PDGBookResource.buildSuccess(pageInfo));
                     }
 
                     @Override
