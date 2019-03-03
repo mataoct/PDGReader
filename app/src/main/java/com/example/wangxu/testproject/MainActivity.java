@@ -13,6 +13,7 @@ import android.support.v7.widget.PagerSnapHelper;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SimpleItemAnimator;
 import android.util.Log;
+import android.view.View;
 
 import com.chaoxing.PDGBookListAdapter;
 import com.chaoxing.bean.Book;
@@ -22,13 +23,17 @@ import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.util.LogUtils;
 import com.chaoxing.viewmodel.BookViewModel;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends FragmentActivity {
     final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "chaoxing/pdgfile" + File.separator + "13788883.pdz";
     public static final String TAG = LogUtils.TAG;
+    public static final String RECYCLE_TAG = "回收tag";
     private String uniqueId;
     private BookViewModel mBookViewModel;
     private RecyclerView rvBookView;
@@ -36,7 +41,6 @@ public class MainActivity extends FragmentActivity {
     private PDGBookListAdapter mAdapter;
 
     private PDGPageInfo mCurrentPage;
-    private PDGPageInfo cachePage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,16 +80,68 @@ public class MainActivity extends FragmentActivity {
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     RecyclerView.LayoutManager layoutManager = rvBookView.getLayoutManager();
-                    mAdapter.notifyDataSetChanged();
                     if (layoutManager instanceof LinearLayoutManager) {
                         int firstVisibleItemPosition = ((LinearLayoutManager) layoutManager).findFirstVisibleItemPosition();
-                        int lastVisibleItemPosition = ((LinearLayoutManager) layoutManager).findLastVisibleItemPosition();
                         if (firstVisibleItemPosition > 0 && firstVisibleItemPosition < mPageList.size()) {
                             mCurrentPage = mPageList.get(firstVisibleItemPosition).getData();
                             Log.i(TAG, "当前页 " + mCurrentPage.getPageNo());
                         }
                     }
                 }
+            }
+        });
+
+        findViewById(R.id.getAllNotEmptyData).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                StringBuffer sb = new StringBuffer();
+                for (int i = 0; i < mPageList.size(); i++) {
+                    PDGPageInfo data = mPageList.get(i).getData();
+                    if (data.getBitmap() != null) {
+                        sb.append(data.getPageNo() + "页").append("\n");
+                    }
+                }
+                File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "readerLog" + File.separator + "log.txt");
+                try {
+                    if (!file.getParentFile().exists()) {
+                        file.getParentFile().mkdirs();
+                    }
+
+                    if (!file.exists()) {
+                        file.createNewFile();
+                    }
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+                    writer.write(sb.toString());
+                    writer.flush();
+                    writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        findViewById(R.id.getCurrentPageInfo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                StringBuffer sb = new StringBuffer();
+                sb.append(mCurrentPage.getPageNo()).append(":::::::::").append(mCurrentPage.getBitmap());
+                Log.i(TAG, sb.toString());
+            }
+        });
+
+        findViewById(R.id.tvCurrentLoadingPage).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                StringBuffer sb = new StringBuffer();
+                if (mCurrenLoadPage == null) {
+                    return;
+                }
+                PDGPageInfo data = mCurrenLoadPage.getData();
+                if (data == null) {
+                    return;
+                }
+                sb.append(data.getPageNo()).append(":::::::").append(data.getBitmap());
+                Log.i(TAG, sb.toString());
             }
         });
     }
@@ -104,67 +160,38 @@ public class MainActivity extends FragmentActivity {
         }
     };
 
-    private void loadPrePage(int currentPage) {
-        if (currentPage > 0 && currentPage < mPageList.size() - 1) {
-            PDGPageInfo prePageInfo = mPageList.get(currentPage - 1).getData();
-            if (prePageInfo.getBitmap() == null || prePageInfo.getBitmap().isRecycled()) {
-                loadPage(mPageList.get(currentPage - 1));
-            }
-            PDGPageInfo lastPageList = mPageList.get(currentPage + 1).getData();
-            if (lastPageList.getBitmap() == null || lastPageList.getBitmap().isRecycled()) {
-                loadPage(mPageList.get(currentPage + 1));
-            }
-        } else if (currentPage == 0) {
-            PDGPageInfo lastPageList = mPageList.get(currentPage + 1).getData();
-            if (lastPageList.getBitmap() == null || lastPageList.getBitmap().isRecycled()) {
-                loadPage(mPageList.get(currentPage + 1));
-            }
-        } else {
-            PDGPageInfo prePageInfo = mPageList.get(currentPage - 1).getData();
-            if (prePageInfo.getBitmap() == null || prePageInfo.getBitmap().isRecycled()) {
-                loadPage(mPageList.get(currentPage - 1));
-            }
-        }
-    }
 
+    private PDGBookResource<PDGPageInfo> mCurrenLoadPage;
 
     private void loadPage(PDGBookResource<PDGPageInfo> pageInfo) {
         Log.i(TAG, "想加载的页码:" + pageInfo.getData().getPageNo());
-        if (cachePage != null) {
+        if (mCurrenLoadPage != null) {
             return;
         }
-        cachePage = pageInfo.getData();
+        mCurrenLoadPage = pageInfo;
         LiveData liveData = mBookViewModel.loadPageTest(pageInfo.getData());
         if (liveData == null) {
             return;
         }
-
         Log.i(TAG, "开始加载第" + pageInfo.getData().getPageNo() + "页");
         liveData.observe(this, new Observer<PDGBookResource<PDGPageInfo>>() {
 
             @Override
             public void onChanged(@Nullable PDGBookResource<PDGPageInfo> pdgPageInfos) {
-                cachePage = null;
-                if (pdgPageInfos == null) {
-                    noticyItemChangeAndNotifyCurrentItem(mCurrentPage.getPageNo() - 1);
-                    return;
+                mCurrenLoadPage = null;
+                if (mCurrentPage == null) {
+                    int visibleItemPosition = ((LinearLayoutManager) rvBookView.getLayoutManager()).findFirstVisibleItemPosition();
+                    mCurrentPage = mPageList.get(visibleItemPosition).getData();
+                    if (mCurrentPage == null) {
+                        mCurrentPage = new PDGPageInfo();
+                    }
                 }
                 final PDGPageInfo data = pdgPageInfos.getData();
-                if (data == null) {
-                    noticyItemChangeAndNotifyCurrentItem(mCurrentPage.getPageNo() - 1);
+                int pageNo = data.getPageNo();
+                int currentPageNo = mCurrentPage.getPageNo();
+                if (pageNo > currentPageNo + 2 && pageNo < currentPageNo - 2) {
+                    onRecyclePage(pdgPageInfos, pageNo - 1);
                     return;
-                }
-                if (mCurrentPage != null) {
-                    int currentPagePageNo = mCurrentPage.getPageNo();
-                    int newDataPageNum = data.getPageNo();
-                    if (currentPagePageNo > (newDataPageNum + 2) || currentPagePageNo < (newDataPageNum - 2)) {
-                        onRecyclePage(pdgPageInfos, newDataPageNum);
-                        noticyItemChangeAndNotifyCurrentItem(mCurrentPage.getPageNo() - 1);
-                        return;
-                    }else if(currentPagePageNo == newDataPageNum){
-                        mCurrentPage.setBitmap(data.getBitmap());
-                    }
-                    Log.i(TAG, "当前页码是" + currentPagePageNo + ",加载回来的页码是" + newDataPageNum);
                 }
 
                 PDGBookResource<PDGPageInfo> loadResource = mPageList.get(data.getPageNo() - 1);
@@ -172,11 +199,46 @@ public class MainActivity extends FragmentActivity {
                     mPageList.set(data.getPageNo() - 1, pdgPageInfos);
                 }
                 noticyItemChangeAndNotifyCurrentItem(data.getPageNo() - 1);
-                if (mCurrentPage != null) {
-                    loadPrePage(mCurrentPage.getPageNo() - 1);
-                }
+                loadCachePage(mCurrentPage);
+                checkNotEmptyPage();
             }
         });
+    }
+
+    private void checkNotEmptyPage() {
+        int page = 0;
+        for (int i = 0; i < mPageList.size(); i++) {
+            if (mPageList.get(i).getData().getBitmap() != null && !mPageList.get(i).getData().getBitmap().isRecycled()) {
+                page++;
+            }
+        }
+        Log.i(RECYCLE_TAG, "非空对象有 " + page + "个");
+    }
+
+    private void loadCachePage(PDGPageInfo page) {
+        int currentPostion = page.getPageNo() - 1;
+        if (currentPostion > 0 && currentPostion < mPageList.size() - 2) {
+            PDGBookResource<PDGPageInfo> preCurrentPage = mPageList.get(currentPostion - 1);
+            if (preCurrentPage.getData().getBitmap() == null || preCurrentPage.getData().getBitmap().isRecycled()) {
+                loadPage(preCurrentPage);
+            }
+
+            PDGBookResource<PDGPageInfo> lastCurrentPage = mPageList.get(currentPostion + 1);
+            if (lastCurrentPage.getData().getBitmap() == null || lastCurrentPage.getData().getBitmap().isRecycled()) {
+                loadPage(lastCurrentPage);
+            }
+        } else if (currentPostion == 0) {
+            PDGBookResource<PDGPageInfo> lastCurrentPage = mPageList.get(currentPostion + 1);
+            if (lastCurrentPage.getData().getBitmap() == null || lastCurrentPage.getData().getBitmap().isRecycled()) {
+                loadPage(lastCurrentPage);
+            }
+        } else if (currentPostion == mPageList.size() - 1) {
+            PDGBookResource<PDGPageInfo> preCurrentPage = mPageList.get(currentPostion - 1);
+            if (preCurrentPage.getData().getBitmap() == null || preCurrentPage.getData().getBitmap().isRecycled()) {
+                loadPage(preCurrentPage);
+            }
+        }
+
     }
 
     private void noticyItemChangeAndNotifyCurrentItem(final int position) {
@@ -184,20 +246,18 @@ public class MainActivity extends FragmentActivity {
             rvBookView.postDelayed(new Runnable() {
                 @Override
                 public void run() {
+                    if (mCurrentPage.getBitmap() == null || mCurrentPage.getBitmap().isRecycled()) {
+                        loadPage(PDGBookResource.buildLoading(mCurrentPage));
+                    }
                     mAdapter.notifyItemChanged(position);
-//                    mAdapter.notifyDataSetChanged();
                 }
             }, 200);
         } else {
-//            mAdapter.notifyDataSetChanged();
+            if (mCurrentPage.getBitmap() == null || mCurrentPage.getBitmap().isRecycled()) {
+                loadPage(PDGBookResource.buildLoading(mCurrentPage));
+            }
             mAdapter.notifyItemChanged(position);
         }
-
-//        if (mCurrentPage != null) {
-//            if (mCurrentPage.getBitmap() == null || mCurrentPage.getBitmap().isRecycled()) {
-//                mAdapter.notifyItemChanged(mCurrentPage.getPageNo() - 1);
-//            }
-//        }
     }
 
 
@@ -213,7 +273,7 @@ public class MainActivity extends FragmentActivity {
             pageInfo.setBitmap(null);
         }
         mPageList.set(position, PDGBookResource.buildIdie(pageInfo));
-        Log.i(TAG, "回收第" + pageInfoResource.getData().getPageNo() + "页");
+        Log.i(RECYCLE_TAG, "回收第" + pageInfoResource.getData().getPageNo() + "页");
     }
 
     private void initBookPages() {

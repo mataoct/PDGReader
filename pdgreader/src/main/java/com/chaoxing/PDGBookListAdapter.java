@@ -52,7 +52,7 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
         if (resource.getStatus() == ResourceContentValue.RESOURCE_STATUS.SUCCESS) {
             PDGPageInfo data = resource.getData();
             Bitmap bitmap = data.getBitmap();
-            if (bitmap != null) {
+            if (bitmap != null && !bitmap.isRecycled()) {
                 holder.pb_loading.setVisibility(View.GONE);
                 holder.ivPage.setImageBitmap(bitmap);
             } else {
@@ -90,7 +90,7 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
         return mPageInfo.get(pos);
     }
 
-    static class PageViewHolder extends RecyclerView.ViewHolder {
+    public static class PageViewHolder extends RecyclerView.ViewHolder {
         public final View pb_loading;
         public ImageView ivPage;
 

@@ -14,7 +14,6 @@ buildscript {
         versionName = "4.0.5.8"  // 内测版
     }
     repositories {
-        maven { url "http://192.168.98.164:8081/repository/all/" }
         google()
         jcenter()
         maven { url "https://jitpack.io" }
@@ -23,8 +22,6 @@ buildscript {
 
     allprojects {
         repositories {
-            maven { url "http://192.168.98.164:8081/repository/all/" }
-
             google()
             jcenter()
             maven { url "https://jitpack.io" }
