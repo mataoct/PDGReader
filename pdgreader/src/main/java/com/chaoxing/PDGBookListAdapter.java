@@ -23,7 +23,7 @@ import java.util.List;
 
 public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.PageViewHolder> {
 
-    private static final String TAG = LogUtils.TAG;
+    private static final String TAG = LogUtils.TAG +"2";
     private final LayoutInflater mInflate;
     private List<PDGBookResource<PDGPageInfo>> mPageInfo;
     private Context mContext;
