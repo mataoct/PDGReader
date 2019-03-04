@@ -21,6 +21,7 @@ import com.chaoxing.bean.PDGBookInfo;
 import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.util.LogUtils;
+import com.chaoxing.util.ToastManager;
 import com.chaoxing.viewmodel.BookViewModel;
 
 import java.io.BufferedWriter;
@@ -52,12 +53,7 @@ public class MainActivity extends FragmentActivity {
         PDGBookInfo bookInfo = mBookViewModel.getBookInfo();
         uniqueId = "1936630812";
         bookInfo.setUniqueId(uniqueId);
-        try {
-            bookInfo.setBookPath(path, mBookViewModel.getPdgParseEx());
-        } catch (Exception e) {
-
-        }
-        initBookPages();
+        bookInfo.setBookPath(path);
         rvBookView = ((RecyclerView) findViewById(R.id.rvBookView));
         PagerSnapHelper snapHelper = new PagerSnapHelper();
         snapHelper.attachToRecyclerView(rvBookView);
@@ -80,6 +76,7 @@ public class MainActivity extends FragmentActivity {
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     RecyclerView.LayoutManager layoutManager = rvBookView.getLayoutManager();
+//                    mAdapter.notifyDataSetChanged();
                     if (layoutManager instanceof LinearLayoutManager) {
                         int firstVisibleItemPosition = ((LinearLayoutManager) layoutManager).findFirstVisibleItemPosition();
                         if (firstVisibleItemPosition > 0 && firstVisibleItemPosition < mPageList.size()) {
@@ -144,6 +141,18 @@ public class MainActivity extends FragmentActivity {
                 Log.i(TAG, sb.toString());
             }
         });
+
+        mBookViewModel.initBook().observe(this, new Observer<PDGBookResource>() {
+            @Override
+            public void onChanged(@Nullable PDGBookResource pdgBookResource) {
+                if (pdgBookResource.isSuccessful()) {
+                    initBookPages();
+                    mAdapter.notifyDataSetChanged();
+                } else if (pdgBookResource.isError()) {
+                    ToastManager.showBottomText(MainActivity.this, pdgBookResource.getMessage());
+                }
+            }
+        });
     }
 
     private PDGBookListAdapter.PdgBookListListener pdgBookListListener = new PDGBookListAdapter.PdgBookListListener() {
@@ -192,6 +201,18 @@ public class MainActivity extends FragmentActivity {
                 if (pageNo > currentPageNo + 2 && pageNo < currentPageNo - 2) {
                     onRecyclePage(pdgPageInfos, pageNo - 1);
                     return;
+                }
+                if (mCurrentPage != null) {
+                    int currentPagePageNo = mCurrentPage.getPageNo();
+                    int newDataPageNum = data.getPageNo();
+                    if (currentPagePageNo > (newDataPageNum + 2) || currentPagePageNo < (newDataPageNum - 2)) {
+                        onRecyclePage(pdgPageInfos, newDataPageNum);
+                        noticyItemChangeAndNotifyCurrentItem(mCurrentPage.getPageNo() - 1);
+                        return;
+                    } else if (currentPagePageNo == newDataPageNum) {
+                        mCurrentPage.setBitmap(data.getBitmap());
+                    }
+                    Log.i(TAG, "当前页码是" + currentPagePageNo + ",加载回来的页码是" + newDataPageNum);
                 }
 
                 PDGBookResource<PDGPageInfo> loadResource = mPageList.get(data.getPageNo() - 1);

@@ -19,6 +19,7 @@ import com.chaoxing.util.LoadFactory;
 import com.chaoxing.util.LogUtils;
 import com.chaoxing.util.PdgParserEx;
 
+import java.io.File;
 import java.util.List;
 
 
@@ -61,6 +62,17 @@ public class BookViewModel extends AndroidViewModel {
         });
 
         return loadPage;
+    }
+
+    public LiveData initBook(){
+        final MediatorLiveData<PDGBookResource<Boolean>> liveData = new MediatorLiveData<>();
+        liveData.addSource(loadFactory.initBook(mPdgBookInfo, mPdgParserEx), new Observer<PDGBookResource>() {
+            @Override
+            public void onChanged(@Nullable PDGBookResource pdgBookResource) {
+                liveData.postValue(pdgBookResource);
+            }
+        });
+        return liveData;
     }
 
 

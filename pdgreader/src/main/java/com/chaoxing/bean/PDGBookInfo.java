@@ -87,94 +87,31 @@ public class PDGBookInfo implements Parcelable {
         return bookPath;
     }
 
-    /**
-     * 设置图书路劲的时候会构建图书的信息,注意处理异常
-     *
-     * @param bookPath
-     * @param pdgParserEx
-     */
-    public void setBookPath(String bookPath, PdgParserEx pdgParserEx) {  //设置了图书的信息后要去构建图书的基本信息
-        if (pdgParserEx == null) {
-            throw new NullPointerException("padparseEx is null,please check");
-        }
-        if (!new File(bookPath).exists()) {
-            throw new RuntimeException("file is not exist,please check");
-        }
-        if (TextUtils.isEmpty(uniqueId)) {
-            throw new NullPointerException("need book uniqueid");
-        }
+    public int getBookType() {
+        return bookType;
+    }
+
+    public void setBookType(int bookType) {
+        this.bookType = bookType;
+    }
+
+    public BookCert getBookCert() {
+        return bookCert;
+    }
+
+    public void setBookCert(BookCert bookCert) {
+        this.bookCert = bookCert;
+    }
+
+    public void setBookPath(String bookPath) {
         this.bookPath = bookPath;
-        buildBookType(pdgParserEx);
-        if (buildBookCert(pdgParserEx)) {
-            buildBookKey();
-            buildBookMetaData(pdgParserEx);
-        } else {
-            throw new RuntimeException("filed to build bookCert!!!");
-        }
-    }
-
-    private void buildBookMetaData(PdgParserEx pdgParserEx) {
-        String metaDataXml = pdgParserEx.getMetaData();
-        if (metaDataXml == null || metaDataXml.length() < 4) {
-            return;
-        }
-        try {
-            SAXParserFactory spf = SAXParserFactory.newInstance();
-            SAXParser sp = spf.newSAXParser();
-            XMLReader xr = sp.getXMLReader();
-            MetaDataHandler handler = new MetaDataHandler();
-            xr.setContentHandler(handler);
-            xr.parse(new InputSource(new ByteArrayInputStream(metaDataXml.getBytes())));
-            metaData = handler.getBookMetaData();
-        } catch (Exception e) {
-
-        }
-    }
-
-    private void buildBookType(PdgParserEx pdgParserEx) {
-        bookType = pdgParserEx.getBookType(bookPath);
-    }
-
-    private void buildBookKey() {
-        bookKey = bookCert.getBookKey();
-    }
-
-    private void buildBookInfo(PdgParserEx pdgParserEx) {
-        buildBookCert(pdgParserEx);
     }
 
     public String getBookKey() {
         return bookKey;
     }
 
-    private boolean buildBookCert(PdgParserEx pdgParserEx) {
-        if (TextUtils.isEmpty(uniqueId)) {
-            return false;
-        }
-        String certXml = null;
-        int[] id = new int[1];
-        id[0] = 0;
-        int[] b = new int[1];
-        b[0] = 0;
-        certXml = pdgParserEx.getCert(bookPath, "0", uniqueId);
-        if (TextUtils.isEmpty(certXml)) {
-            return false;
-        }
-        try {
-            SAXParserFactory spf = SAXParserFactory.newInstance();
-            SAXParser sp = spf.newSAXParser();
-            XMLReader xr = sp.getXMLReader();
-            CertHandler handler = new CertHandler();
-            xr.setContentHandler(handler);
-            xr.parse(new InputSource(new ByteArrayInputStream(certXml.getBytes())));
-            bookCert = handler.getBookCert();
-        } catch (Exception e) {
-            return false;
-        }
-
-        if (bookCert == null || TextUtils.isEmpty(bookCert.getBookKey())) {
-            return false;
-        }
-        return true;
+    public void setBookKey(String bookKey) {
+        this.bookKey = bookKey;
     }
 }

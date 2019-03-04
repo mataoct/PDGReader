@@ -27,8 +27,20 @@ public class PDGBookResource<T> {
         return new PDGBookResource(ResourceContentValue.RESOURCE_STATUS.ERROR, null, data);
     }
 
+    public static <T> PDGBookResource<T> buildError(String errorMessage){
+        return new PDGBookResource<>(ResourceContentValue.RESOURCE_STATUS.ERROR,errorMessage,null);
+    }
+
     public int getStatus() {
         return status;
+    }
+
+    public boolean isSuccessful(){
+        return status == ResourceContentValue.RESOURCE_STATUS.SUCCESS;
+    }
+
+    public boolean isError(){
+        return status == ResourceContentValue.RESOURCE_STATUS.ERROR;
     }
 
 
