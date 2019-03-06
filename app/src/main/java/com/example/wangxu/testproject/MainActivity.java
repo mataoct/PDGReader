@@ -298,16 +298,60 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void initBookPages() {
+
         PDGBookInfo bookInfo = mBookViewModel.getBookInfo();
         Book metaData = bookInfo.getMetaData();
         int pageNum = metaData.getPageNum();
         PDGPageInfo pageInfo;
-        for (int i = 1; i <= pageNum; i++) {
-            pageInfo = new PDGPageInfo();
-            pageInfo.setFilePath(path);
-            pageInfo.setPageNo(i);
-            pageInfo.setPageType(6);
+        for (int i = bookInfo.getStartPage(); i <= pageNum; i++) {
+            pageInfo = buildPage(i, bookInfo);
             mPageList.add(PDGBookResource.buildIdie(pageInfo));
+        }
+        mCurrentPage = mPageList.get(0).getData();
+
+    }
+
+    private PDGPageInfo buildPage(int pageNo, PDGBookInfo bookInfo) {
+        PDGPageInfo pageInfo = new PDGPageInfo();
+        pageInfo.setFilePath(path);
+        pageInfo.setPageNo(pageNo);
+        pageInfo.setPageType(6);
+        if (bookInfo.getPageTypeInfos().size() < 1) {
+            if (bookInfo.getStartPage() > pageNo) {
+                return null;
+            } else if (bookInfo.getMetaData().getPageNum() > 0 && pageNo > bookInfo.getMetaData().getPageNum()) {
+                return null;
+            } else {
+                return pageInfo;
+            }
+        }
+
+        if (bookInfo.getStartPage() > pageNo) {
+            for (int i = pageInfo.getPageType() - 1; i > 0; i--) {
+                int pageNum = bookInfo.getPageTypeInfos().get(i).getPageNum();
+                if (pageNum > 0) {
+                    pageInfo.setPageNo(pageInfo.getPageNo() - bookInfo.getStartPage() + 1 + pageNum);
+                }
+                if (pageInfo.getPageNo() > 0) {
+                    pageInfo.setPageType(i);
+                    return pageInfo;
+                }
+            }
+            return null;
+        } else if (pageNo > bookInfo.getPageInfos()[pageInfo.getPageType()]) {
+            for (int i = pageInfo.getPageType() + 1; i <= bookInfo.getPageTypeInfos().size(); i++) {
+                int pageNum = bookInfo.getPageTypeInfos().get(i).getPageNum();
+                if (pageNum > 0) {
+                    pageInfo.setPageNo(pageInfo.getPageNo() + bookInfo.getStartPage() - 1 - pageNo);
+                }
+                if (pageInfo.getPageNo() <= bookInfo.getPageInfos()[pageInfo.getPageType()] + bookInfo.getStartPage() - 1) {
+                    pageInfo.setPageType(i);
+                    return pageInfo;
+                }
+            }
+            return null;
+        } else {
+            return pageInfo;
         }
     }
 }

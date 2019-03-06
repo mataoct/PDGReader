@@ -13,6 +13,7 @@ import org.xml.sax.XMLReader;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.List;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -27,6 +28,24 @@ public class PDGBookInfo implements Parcelable {
     private Book metaData;       //图书信息
     private int bookType;  //图书类型
     private PDGPageInfo currentPage;  //当前页
+    private int startPage;
+    private List<PageTypeInfo> pageTypeInfos;
+    /**
+     * 页面类型数据
+     * pageType:
+     * 1— cov   封面
+     * 2— bok  书名
+     * 3— leg  版权
+     * 4— fow   前言
+     * 5— ！    目录
+     * 6—       正文
+     * 7—   没用
+     * 8— att    附录
+     * 9—  bac   封底
+     * startPage 开始页
+     * pageNum 总页数
+     */
+    private int[] pageInfos;
 
     public PDGBookInfo() {
     }
@@ -113,5 +132,29 @@ public class PDGBookInfo implements Parcelable {
 
     public void setBookKey(String bookKey) {
         this.bookKey = bookKey;
+    }
+
+    public int getStartPage() {
+        return startPage;
+    }
+
+    public void setStartPage(int startPage) {
+        this.startPage = startPage;
+    }
+
+    public List<PageTypeInfo> getPageTypeInfos() {
+        return pageTypeInfos;
+    }
+
+    public void setPageTypeInfos(List<PageTypeInfo> pageTypeInfos) {
+        this.pageTypeInfos = pageTypeInfos;
+    }
+
+    public int[] getPageInfos() {
+        return pageInfos;
+    }
+
+    public void setPageInfos(int[] pageInfos) {
+        this.pageInfos = pageInfos;
     }
 }

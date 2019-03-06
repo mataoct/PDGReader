@@ -32,8 +32,8 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
     public PDGBookListAdapter(List<PDGBookResource<PDGPageInfo>> mPageInfo, Context mContext) {
         this.mPageInfo = mPageInfo;
         this.mContext = mContext;
-        if (mPageInfo == null) {
-            mPageInfo = new ArrayList<>();
+        if (this.mPageInfo == null) {
+            this.mPageInfo = new ArrayList<>();
         }
         mInflate = LayoutInflater.from(mContext);
     }

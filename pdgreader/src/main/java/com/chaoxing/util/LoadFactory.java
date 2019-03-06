@@ -13,12 +13,16 @@ import com.chaoxing.bean.BookCert;
 import com.chaoxing.bean.PDGBookInfo;
 import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
+import com.chaoxing.bean.PageTypeInfo;
+import com.chaoxing.bean.ReadInfo;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -136,6 +140,10 @@ public class LoadFactory {
                     return PDGBookResource.buildError("获取图书mate数据异常");
                 }
 
+                if (!buildBookPageInfo(pdgParserEx, bookInfo)) {
+                    return PDGBookResource.buildError("解析图书page信息异常");
+                }
+
                 return PDGBookResource.buildSuccess(bookInfo);
             }
         }).observeOn(AndroidSchedulers.mainThread())
@@ -162,6 +170,34 @@ public class LoadFactory {
                     }
                 });
         return liveData;
+    }
+
+    private boolean buildBookPageInfo(PdgParserEx pdgParserEx, PDGBookInfo bookInfo) {
+        if (bookInfo.getBookType() == ReadInfo.BOOK_TYPE_INNER_PDX_PDG) {
+            int[] pageInfo = pdgParserEx.getPageInfo();
+            if (pageInfo == null) {
+                return false;
+            }
+            pageInfo[0] = pageInfo[0] - 1;
+            if (pageInfo[0] - 1 < 1) {
+                pageInfo[0] = 1;
+            }
+
+            bookInfo.setStartPage(pageInfo[0]);
+            pageInfo[6] = bookInfo.getMetaData().getPageNum();
+            bookInfo.setPageInfos(pageInfo);
+            List<PageTypeInfo> pageTypeInfos = new ArrayList<>();
+            for (int i = 1; i <= 9; i++) {
+                PageTypeInfo pageTypeInfo = new PageTypeInfo();
+                pageTypeInfo.setPageNum(pageInfo[i]);
+                pageTypeInfo.setPageType(i);
+                pageTypeInfo.setStartPage(i == 6 ? bookInfo.getStartPage() : 1);
+                pageTypeInfos.add(pageTypeInfo);
+            }
+
+            bookInfo.setPageTypeInfos(pageTypeInfos);
+        }
+        return true;
     }
 
     private boolean buildBookMetaData(PdgParserEx pdgParserEx, PDGBookInfo bookInfo) {
