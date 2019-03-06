@@ -16,14 +16,13 @@ import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.bean.ResourceContentValue;
 import com.chaoxing.util.LogUtils;
-import com.chaoxing.util.R;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.PageViewHolder> {
 
-    private static final String TAG = LogUtils.TAG +"2";
+    private static final String TAG = LogUtils.TAG + "2";
     private final LayoutInflater mInflate;
     private List<PDGBookResource<PDGPageInfo>> mPageInfo;
     private Context mContext;

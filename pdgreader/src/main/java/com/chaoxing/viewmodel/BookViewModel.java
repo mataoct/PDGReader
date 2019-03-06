@@ -5,11 +5,8 @@ import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MediatorLiveData;
 import android.arch.lifecycle.Observer;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import com.chaoxing.bean.PDGBookInfo;
 import com.chaoxing.bean.PDGBookResource;
@@ -19,7 +16,6 @@ import com.chaoxing.util.LoadFactory;
 import com.chaoxing.util.LogUtils;
 import com.chaoxing.util.PdgParserEx;
 
-import java.io.File;
 import java.util.List;
 
 
@@ -49,10 +45,11 @@ public class BookViewModel extends AndroidViewModel {
     }
 
     public LiveData loadPageTest(PDGPageInfo pageInfo) {
-        if (pageInfo == null) {
-            return null;
-        }
         final MediatorLiveData<PDGBookResource<PDGPageInfo>> loadPage = new MediatorLiveData<>();
+        if (pageInfo == null) {
+            loadPage.setValue(PDGBookResource.buildError(pageInfo));
+            return loadPage;
+        }
         loadPage.addSource(loadFactory.load(pageInfo, mPdgParserEx, mPdgBookInfo), new Observer<PDGBookResource<PDGPageInfo>>() {
             @Override
             public void onChanged(@Nullable PDGBookResource<PDGPageInfo> pdgPageInfo) {
@@ -64,7 +61,7 @@ public class BookViewModel extends AndroidViewModel {
         return loadPage;
     }
 
-    public LiveData initBook(){
+    public LiveData initBook() {
         final MediatorLiveData<PDGBookResource<Boolean>> liveData = new MediatorLiveData<>();
         liveData.addSource(loadFactory.initBook(mPdgBookInfo, mPdgParserEx), new Observer<PDGBookResource>() {
             @Override

@@ -33,18 +33,18 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'junit:junit:4.12'
-    api "com.android.support:support-v4:${rootProject.ext.supportLibVersion}"
-    api "com.android.support:appcompat-v7:${rootProject.ext.supportLibVersion}"
+    implementation "com.android.support:support-v4:${rootProject.ext.supportLibVersion}"
+    implementation "com.android.support:appcompat-v7:${rootProject.ext.supportLibVersion}"
     def version_lifecycle = "1.1.0"
     def version_rxjava = "2.1.16"
     def version_rxandroid = "2.0.2"
-    api "android.arch.lifecycle:runtime:$version_lifecycle"
-    api "android.arch.lifecycle:viewmodel:$version_lifecycle"
-    api "android.arch.lifecycle:livedata:$version_lifecycle"
-    api "android.arch.lifecycle:extensions:$version_lifecycle"
+    implementation "android.arch.lifecycle:runtime:$version_lifecycle"
+    implementation "android.arch.lifecycle:viewmodel:$version_lifecycle"
+    implementation "android.arch.lifecycle:livedata:$version_lifecycle"
+    implementation "android.arch.lifecycle:extensions:$version_lifecycle"
     annotationProcessor "android.arch.lifecycle:compiler:$version_lifecycle"
-    api "android.arch.lifecycle:reactivestreams:$version_lifecycle"
+    implementation "android.arch.lifecycle:reactivestreams:$version_lifecycle"
     implementation "io.reactivex.rxjava2:rxjava:$version_rxjava"
     implementation "io.reactivex.rxjava2:rxandroid:$version_rxandroid"
-    api "com.android.support:recyclerview-v7:${rootProject.ext.supportLibVersion}"
+    implementation "com.android.support:recyclerview-v7:${rootProject.ext.supportLibVersion}"
 }

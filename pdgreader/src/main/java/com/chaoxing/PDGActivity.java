@@ -21,7 +21,6 @@ import com.chaoxing.bean.PDGBookInfo;
 import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.util.LogUtils;
-import com.chaoxing.util.R;
 import com.chaoxing.util.ToastManager;
 import com.chaoxing.viewmodel.BookViewModel;
 

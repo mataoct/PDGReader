@@ -49,7 +49,11 @@ public class LoadFactory {
         Observable.create(new ObservableOnSubscribe<Integer>() {
             @Override
             public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
-                emitter.onNext(pageInfo.getPageNo());
+                if (pageInfo == null) {
+                    emitter.onError(null);
+                } else {
+                    emitter.onNext(pageInfo.getPageNo());
+                }
             }
         }).map(new Function<Integer, PDGPageInfo>() {
             @Override
