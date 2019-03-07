@@ -4,12 +4,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <android.support.v7.widget.RecyclerView
+    <com.chaoxing.view.ControlRecyclerView
         android:id="@+id/rvBookView"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-    </android.support.v7.widget.RecyclerView>
+    </com.chaoxing.view.ControlRecyclerView>
 
     <Button
         android:id="@+id/getAllNotEmptyData"

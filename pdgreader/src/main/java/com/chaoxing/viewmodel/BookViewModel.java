@@ -26,7 +26,6 @@ public class BookViewModel extends AndroidViewModel {
     private PdgParserEx mPdgParserEx;
     private PDGBookInfo mPdgBookInfo;
     private LoadFactory loadFactory;
-    private Setting mSetting;
 
     public BookViewModel(@NonNull Application application) {
         super(application);
@@ -81,7 +80,4 @@ public class BookViewModel extends AndroidViewModel {
         return mPdgParserEx;
     }
 
-    public Setting getSetting() {
-        return mSetting;
-    }
 }
