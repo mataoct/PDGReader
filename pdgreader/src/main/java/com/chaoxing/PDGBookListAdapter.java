@@ -2,23 +2,21 @@ package com.chaoxing;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.RectF;
-import android.graphics.drawable.ColorDrawable;
+import android.graphics.Matrix;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.bean.ResourceContentValue;
-import com.chaoxing.bean.Setting;
 import com.chaoxing.util.LogUtils;
 import com.chaoxing.view.PinchImageView;
+import com.davemorrissey.labs.subscaleview.ImageSource;
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +27,6 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
     private final LayoutInflater mInflate;
     private List<PDGBookResource<PDGPageInfo>> mPageInfo;
     private Context mContext;
-    private ColorDrawable mTransparentDrawable = new ColorDrawable(Color.TRANSPARENT);
 
     public PDGBookListAdapter(List<PDGBookResource<PDGPageInfo>> mPageInfo, Context mContext) {
         this.mPageInfo = mPageInfo;
@@ -56,17 +53,17 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
             Bitmap bitmap = data.getBitmap();
             if (bitmap != null && !bitmap.isRecycled()) {
                 holder.pb_loading.setVisibility(View.GONE);
-                holder.ivPage.setImageBitmap(bitmap);
+                holder.ivPage.setImage(ImageSource.bitmap(bitmap));
             } else {
                 pdgBookListListener.startLoadPage(PDGBookResource.buildLoading(data), position);
-                holder.ivPage.setImageDrawable(mTransparentDrawable);
+                holder.ivPage.setImage(ImageSource.resource(R.drawable.tranf_image));
             }
         } else if (resource.getStatus() == ResourceContentValue.RESOURCE_STATUS.ERROR) {
-            holder.ivPage.setImageDrawable(mTransparentDrawable);
+            holder.ivPage.setImage(ImageSource.resource(R.drawable.tranf_image));
         } else {
             pdgBookListListener.startLoadPage(resource, position);
             holder.pb_loading.setVisibility(View.VISIBLE);
-            holder.ivPage.setImageDrawable(mTransparentDrawable);
+            holder.ivPage.setImage(ImageSource.resource(R.drawable.tranf_image));
         }
 
     }
@@ -88,69 +85,27 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
         return mPageInfo.size();
     }
 
+    private PinchImageView.OuterMatrixChangedListener outerMatrixChangedListener = new PinchImageView.OuterMatrixChangedListener() {
+        @Override
+        public void onOuterMatrixChanged(PinchImageView pinchImageView) {
+            Matrix currentImageMatrix = pinchImageView.getCurrentImageMatrix(null);
+            float[] matrixScale = PinchImageView.MathUtils.getMatrixScale(currentImageMatrix);
+            Log.i(TAG, "onOuterMatrixChanged: " + matrixScale[0] + "::::Y:" + matrixScale[1]);
+        }
+    };
+
     public PDGBookResource<PDGPageInfo> getItem(int pos) {
         return mPageInfo.get(pos);
     }
 
     public class PageViewHolder extends RecyclerView.ViewHolder {
         public final View pb_loading;
-        private final View rootView;
-        public PinchImageView ivPage;
-        private int lastX;
+        public SubsamplingScaleImageView ivPage;
 
         public PageViewHolder(View itemView) {
             super(itemView);
             ivPage = itemView.findViewById(R.id.ivPage);
             pb_loading = itemView.findViewById(R.id.pb_loading);
-            rootView = itemView;
-        }
-
-        /**
-         * 事件
-         *
-         * @return false 父控件滑动 true 自己处理滑动
-         */
-        public boolean isTouchSelf(MotionEvent e) {
-            int action = e.getAction();
-            switch (action) {
-                case MotionEvent.ACTION_DOWN:
-                    lastX = (int) e.getX();
-                    return false;
-                case MotionEvent.ACTION_MOVE:
-                    int currentX = (int) e.getX();
-                    Log.i(TAG, "滑动item数据:lastx: " + lastX + "::::::currentX:" + currentX);
-                    int devX = currentX - lastX;
-                    lastX = currentX;
-                    return clacCanNotifyParentViewMove(e, devX);
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL:
-                    lastX = 0;
-                    return true;
-
-
-            }
-            return false;
-        }
-
-        private boolean clacCanNotifyParentViewMove(MotionEvent e, int devX) {
-            int width = rootView.getWidth();
-            int screenWidth = Setting.get().getWidth();
-            RectF imageBound = ivPage.getImageBound(null);
-            Log.i(TAG, "滑动item数据: bound.left" + imageBound.left + "::::bound.right:" + imageBound.right + "::::::rootview.width:" + width + "::::::screenWidth:" + screenWidth + ":::::滑动方向:" + (devX > 0 ? "右" : "左"));
-            if (devX > 0) { //右滑
-                if (imageBound.left > 0) {  //当前view的x坐标到了屏幕里面，
-                    ivPage.onTouchEvent(e);
-                    return false;
-                }
-                return true;
-            } else if (devX < 0) { //左滑
-                if (imageBound.right <= width) {
-                    return false;
-                }
-                return true;
-            } else {
-                return true;
-            }
         }
     }
 
