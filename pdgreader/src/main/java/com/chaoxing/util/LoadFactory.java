@@ -59,9 +59,9 @@ public class LoadFactory {
             @Override
             public PDGPageInfo apply(Integer page) throws Exception {
                 long startTime = SystemClock.currentThreadTimeMillis();
-                byte[] datas = pdgParserEx.parsePdzBuffer(pdgBookInfo.getBookPath(), pdgBookInfo.getBookKey(), 6, page, 0, 0);
+                byte[] datas = pdgParserEx.parsePdzBuffer(pdgBookInfo.getBookPath(), pdgBookInfo.getBookKey(), pageInfo.getPageType(), page, 0, 0);
                 if (datas == null) {
-                    datas = pdgParserEx.parsePdzBuffer(pdgBookInfo.getBookPath(), PDGBookInfo.DEFAULT_BOOK_KEY, 6, page, 0, 0);
+                    datas = pdgParserEx.parsePdzBuffer(pdgBookInfo.getBookPath(), PDGBookInfo.DEFAULT_BOOK_KEY, pageInfo.getPageType(), page, 0, 0);
                 }
                 if (datas == null) {
                     return null;

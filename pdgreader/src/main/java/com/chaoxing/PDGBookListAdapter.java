@@ -2,7 +2,7 @@ package com.chaoxing;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
+import android.graphics.PointF;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -14,8 +14,8 @@ import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.bean.ResourceContentValue;
 import com.chaoxing.util.LogUtils;
-import com.chaoxing.view.PinchImageView;
 import com.davemorrissey.labs.subscaleview.ImageSource;
+import com.davemorrissey.labs.subscaleview.ImageViewState;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.util.ArrayList;
@@ -27,6 +27,7 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
     private final LayoutInflater mInflate;
     private List<PDGBookResource<PDGPageInfo>> mPageInfo;
     private Context mContext;
+    private float mScale;  //缩放倍数
 
     public PDGBookListAdapter(List<PDGBookResource<PDGPageInfo>> mPageInfo, Context mContext) {
         this.mPageInfo = mPageInfo;
@@ -53,7 +54,8 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
             Bitmap bitmap = data.getBitmap();
             if (bitmap != null && !bitmap.isRecycled()) {
                 holder.pb_loading.setVisibility(View.GONE);
-                holder.ivPage.setImage(ImageSource.bitmap(bitmap));
+                holder.ivPage.setImage(ImageSource.bitmap(bitmap), new ImageViewState(mScale, new PointF(0, 0), 0));
+                holder.ivPage.setOnStateChangedListener(new StateChangeListener(position));
             } else {
                 pdgBookListListener.startLoadPage(PDGBookResource.buildLoading(data), position);
                 holder.ivPage.setImage(ImageSource.resource(R.drawable.tranf_image));
@@ -80,19 +82,33 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
         super.onViewRecycled(holder);
     }
 
+    private class StateChangeListener implements SubsamplingScaleImageView.OnStateChangedListener {
+        private int position;
+
+        public StateChangeListener( int position) {
+
+            this.position = position;
+        }
+
+        @Override
+        public void onScaleChanged(float newScale, int origin) {
+            mScale = newScale;
+            if (pdgBookListListener != null) {
+                pdgBookListListener.onScaleChange(position, newScale);
+            }
+        }
+
+        @Override
+        public void onCenterChanged(PointF newCenter, int origin) {
+
+        }
+    }
+
     @Override
     public int getItemCount() {
         return mPageInfo.size();
     }
 
-    private PinchImageView.OuterMatrixChangedListener outerMatrixChangedListener = new PinchImageView.OuterMatrixChangedListener() {
-        @Override
-        public void onOuterMatrixChanged(PinchImageView pinchImageView) {
-            Matrix currentImageMatrix = pinchImageView.getCurrentImageMatrix(null);
-            float[] matrixScale = PinchImageView.MathUtils.getMatrixScale(currentImageMatrix);
-            Log.i(TAG, "onOuterMatrixChanged: " + matrixScale[0] + "::::Y:" + matrixScale[1]);
-        }
-    };
 
     public PDGBookResource<PDGPageInfo> getItem(int pos) {
         return mPageInfo.get(pos);
@@ -101,6 +117,7 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
     public class PageViewHolder extends RecyclerView.ViewHolder {
         public final View pb_loading;
         public SubsamplingScaleImageView ivPage;
+        public float mScale;
 
         public PageViewHolder(View itemView) {
             super(itemView);
@@ -120,6 +137,8 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
         void startLoadPage(PDGBookResource<PDGPageInfo> resource, int position);
 
         void recyclePage(PDGBookResource<PDGPageInfo> resource, int position);
+
+        void onScaleChange(int position, float scale);
     }
 
 }

@@ -5,6 +5,7 @@ import android.content.Context;
 public class Setting {
     private int width;
     private int height;
+    private float imageScale;
     private static Setting mSetting = new Setting();
 
     private Setting() {
@@ -35,5 +36,13 @@ public class Setting {
 
     public void setHeight(int height) {
         this.height = height;
+    }
+
+    public float getImageScale() {
+        return imageScale;
+    }
+
+    public void setImageScale(float imageScale) {
+        this.imageScale = imageScale;
     }
 }

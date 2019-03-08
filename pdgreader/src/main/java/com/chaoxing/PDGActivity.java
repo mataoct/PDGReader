@@ -20,6 +20,7 @@ import com.chaoxing.bean.Book;
 import com.chaoxing.bean.PDGBookInfo;
 import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
+import com.chaoxing.bean.ResourceContentValue;
 import com.chaoxing.util.LogUtils;
 import com.chaoxing.util.ToastManager;
 import com.chaoxing.viewmodel.BookViewModel;
@@ -172,7 +173,29 @@ public class PDGActivity extends AppCompatActivity {
         public void recyclePage(PDGBookResource<PDGPageInfo> pageInfo, int position) {
             onRecyclePage(pageInfo, position);
         }
+
+        @Override
+        public void onScaleChange(int position, float scale) {
+            noticfyImageScaleChange(position, scale);
+        }
     };
+
+    private void noticfyImageScaleChange(int position, float mScale) {
+        if (position > 0 && position < mPageList.size()) {
+            int pre = position;
+            int next = position;
+            for (int i = 0; i < ResourceContentValue.NOTIFY_REFRESH_COUNT; i++) {
+                pre--;
+                if (pre >= 0) {
+                    mAdapter.notifyItemChanged(pre);
+                }
+                next++;
+                if (mPageList.size() > next) {
+                    mAdapter.notifyItemChanged(next);
+                }
+            }
+        }
+    }
 
 
     private PDGBookResource<PDGPageInfo> mCurrenLoadPage;
