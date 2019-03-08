@@ -14,7 +14,12 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SimpleItemAnimator;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
+import android.widget.TextView;
 
 import com.chaoxing.bean.Book;
 import com.chaoxing.bean.PDGBookInfo;
@@ -22,6 +27,7 @@ import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.bean.ResourceContentValue;
 import com.chaoxing.util.LogUtils;
+import com.chaoxing.util.ScreenUtils;
 import com.chaoxing.util.ToastManager;
 import com.chaoxing.viewmodel.BookViewModel;
 
@@ -43,10 +49,17 @@ public class PDGActivity extends AppCompatActivity {
     private PDGBookListAdapter mAdapter;
 
     private PDGPageInfo mCurrentPage;
+    private View ivLeft;
+    private View ivRight;
+    private TextView tvTilte;
+    private View rlTitleBar;
+    private View llBottomBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        ScreenUtils.setSystemUIVisible(this, false, false);
         Log.i(TAG, "onCreate: activity");
         setContentView(R.layout.activity_pdgreader);
 
@@ -60,6 +73,12 @@ public class PDGActivity extends AppCompatActivity {
             return;
         }
         bookInfo.setBookPath(data.getPath());
+        initView();
+        initData();
+        initListener();
+    }
+
+    private void initView() {
         rvBookView = ((RecyclerView) findViewById(R.id.rvBookView));
         PagerSnapHelper snapHelper = new PagerSnapHelper();
         snapHelper.attachToRecyclerView(rvBookView);
@@ -75,24 +94,16 @@ public class PDGActivity extends AppCompatActivity {
 
         rvBookView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         mAdapter = new PDGBookListAdapter(mPageList, this);
-        mAdapter.setPdgBookListListener(pdgBookListListener);
         rvBookView.setAdapter(mAdapter);
-        rvBookView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    RecyclerView.LayoutManager layoutManager = rvBookView.getLayoutManager();
-//                    mAdapter.notifyDataSetChanged();
-                    if (layoutManager instanceof LinearLayoutManager) {
-                        int firstVisibleItemPosition = ((LinearLayoutManager) layoutManager).findFirstVisibleItemPosition();
-                        if (firstVisibleItemPosition > 0 && firstVisibleItemPosition < mPageList.size()) {
-                            mCurrentPage = mPageList.get(firstVisibleItemPosition).getData();
-                            Log.i(TAG, "当前页 " + mCurrentPage.getPageNo());
-                        }
-                    }
-                }
-            }
-        });
+
+        ivLeft = findViewById(R.id.ivLeft);
+        ivRight = findViewById(R.id.ivRight);
+        tvTilte = findViewById(R.id.tvTitle);
+
+        rlTitleBar = findViewById(R.id.rlTitleBar);
+
+        llBottomBar = findViewById(R.id.llBottomBar);
+
 
         findViewById(R.id.getAllNotEmptyData).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -147,12 +158,68 @@ public class PDGActivity extends AppCompatActivity {
                 Log.i(TAG, sb.toString());
             }
         });
+    }
 
+    private void initListener() {
+        mAdapter.setPdgBookListListener(pdgBookListListener);
+        rvBookView.addOnScrollListener(onScrollListener);
+        rvBookView.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
+            @Override
+            public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) { //滑动rv的move事件
+                if (e.getAction() == MotionEvent.ACTION_MOVE) {
+                    hideBar();
+                }
+                return false;
+            }
+
+            @Override
+            public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+
+            }
+
+            @Override
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+
+            }
+        });
+        ivLeft.setOnClickListener(new ClickListenr());
+    }
+
+    /**
+     * 隐藏和显示顶部和底部bar
+     * 点击需要切换显示和隐藏
+     * 滑动需要隐藏
+     * 滑动因为事件分发的原因，所以分为滑动rv和滑动imageview(放大后，处理)
+     */
+
+    private void hideBar() {
+//        if (rlTitleBar.getVisibility() == View.GONE) {
+//            return;
+//        }
+//        rlTitleBar.setVisibility(View.GONE);
+//        llBottomBar.setVisibility(View.GONE);
+        showView(llBottomBar, false, 1);
+        showView(rlTitleBar, false, -1);
+    }
+
+    private void showBar() {
+//        if (rlTitleBar.getVisibility() == View.VISIBLE) {
+//            return;
+//        }
+//        rlTitleBar.setVisibility(View.VISIBLE);
+//        llBottomBar.setVisibility(View.VISIBLE);
+        showView(rlTitleBar, true, -1);
+        showView(llBottomBar, true, 1);
+    }
+
+
+    private void initData() {
         mBookViewModel.initBook().observe(this, new Observer<PDGBookResource>() {
             @Override
             public void onChanged(@Nullable PDGBookResource pdgBookResource) {
                 if (pdgBookResource.isSuccessful()) {
                     initBookPages();
+                    setBookTitle();
                     mAdapter.notifyDataSetChanged();
                 } else if (pdgBookResource.isError()) {
                     ToastManager.showBottomText(PDGActivity.this, pdgBookResource.getMessage());
@@ -160,6 +227,29 @@ public class PDGActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void setBookTitle() {
+        Book bookInfo = mBookViewModel.getBookInfo().getMetaData();
+        tvTilte.setText(bookInfo.getTitle());
+    }
+
+
+    private RecyclerView.OnScrollListener onScrollListener = new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                RecyclerView.LayoutManager layoutManager = rvBookView.getLayoutManager();
+//                    mAdapter.notifyDataSetChanged();
+                if (layoutManager instanceof LinearLayoutManager) {
+                    int firstVisibleItemPosition = ((LinearLayoutManager) layoutManager).findFirstVisibleItemPosition();
+                    if (firstVisibleItemPosition > 0 && firstVisibleItemPosition < mPageList.size()) {
+                        mCurrentPage = mPageList.get(firstVisibleItemPosition).getData();
+                        Log.i(TAG, "当前页 " + mCurrentPage.getPageNo());
+                    }
+                }
+            }
+        }
+    };
 
     private PDGBookListAdapter.PdgBookListListener pdgBookListListener = new PDGBookListAdapter.PdgBookListListener() {
         @Override
@@ -178,6 +268,22 @@ public class PDGActivity extends AppCompatActivity {
         public void onScaleChange(int position, float scale) {
             noticfyImageScaleChange(position, scale);
         }
+
+        @Override
+        public void onItemClick(PDGBookListAdapter.PageViewHolder holder) {
+            if (rlTitleBar.getVisibility() == View.VISIBLE) {
+                hideBar();
+            } else {
+                showBar();
+            }
+            Log.i(TAG, "onItemClick: clickOn");
+        }
+
+        @Override
+        public void onItemTouchMove(PDGBookListAdapter.PageViewHolder holder) {
+            hideBar();
+            Log.i(TAG, "onItemClick: clickMove");
+        }
     };
 
     private void noticfyImageScaleChange(int position, float mScale) {
@@ -193,6 +299,53 @@ public class PDGActivity extends AppCompatActivity {
                 if (mPageList.size() > next) {
                     mAdapter.notifyItemChanged(next);
                 }
+            }
+        }
+    }
+
+    protected void showView(final View v, boolean isShow, int showFrom) {
+        int fromYValue = showFrom;
+        if (isShow) {
+            if (v.getVisibility() != View.VISIBLE) {
+                Animation anim = new TranslateAnimation(
+                        Animation.RELATIVE_TO_SELF, 0,
+                        Animation.RELATIVE_TO_SELF, 0,
+                        Animation.RELATIVE_TO_SELF, fromYValue,
+                        Animation.RELATIVE_TO_SELF, 0);
+                anim.setDuration(150);
+                anim.setAnimationListener(new Animation.AnimationListener() {
+                    public void onAnimationStart(Animation animation) {
+                        v.setVisibility(View.VISIBLE);
+                    }
+
+                    public void onAnimationRepeat(Animation animation) {
+                    }
+
+                    public void onAnimationEnd(Animation animation) {
+                    }
+                });
+                v.startAnimation(anim);
+            }
+        } else {
+            if (v.getVisibility() == View.VISIBLE) {
+                Animation anim = new TranslateAnimation(
+                        Animation.RELATIVE_TO_SELF, 0,
+                        Animation.RELATIVE_TO_SELF, 0,
+                        Animation.RELATIVE_TO_SELF, 0,
+                        Animation.RELATIVE_TO_SELF, fromYValue);
+                anim.setDuration(150);
+                anim.setAnimationListener(new Animation.AnimationListener() {
+                    public void onAnimationStart(Animation animation) {
+                    }
+
+                    public void onAnimationRepeat(Animation animation) {
+                    }
+
+                    public void onAnimationEnd(Animation animation) {
+                        v.setVisibility(View.INVISIBLE);
+                    }
+                });
+                v.startAnimation(anim);
             }
         }
     }
@@ -399,6 +552,18 @@ public class PDGActivity extends AppCompatActivity {
             return null;
         } else {
             return pageInfo;
+        }
+    }
+
+    private class ClickListenr implements View.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            int id = v.getId();
+            if (id == R.id.ivLeft) {
+                onBackPressed();
+            } else if (id == R.id.ivRight) {
+
+            }
         }
     }
 }
