@@ -6,6 +6,7 @@ import android.graphics.PointF;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,6 +30,8 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
     private List<PDGBookResource<PDGPageInfo>> mPageInfo;
     private Context mContext;
     private float mScale;  //缩放倍数
+    private PageGestureListener pageGestureListener = new PageGestureListener();
+    private GestureDetector gestureDetector;
 
     public PDGBookListAdapter(List<PDGBookResource<PDGPageInfo>> mPageInfo, Context mContext) {
         this.mPageInfo = mPageInfo;
@@ -37,6 +40,7 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
             this.mPageInfo = new ArrayList<>();
         }
         mInflate = LayoutInflater.from(mContext);
+        gestureDetector = new GestureDetector(mContext, pageGestureListener);
     }
 
     @NonNull
@@ -57,35 +61,13 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
                 holder.pb_loading.setVisibility(View.GONE);
                 holder.ivPage.setImage(ImageSource.bitmap(bitmap), new ImageViewState(mScale, new PointF(0, 0), 0));
                 holder.ivPage.setOnStateChangedListener(new StateChangeListener(position));
-                holder.ivPage.setOnClickListener(new View.OnClickListener() {  //内部view的点击事件，rootView也接受不到，应该是ivpage影响的
-                    @Override
-                    public void onClick(View v) {
-                        if (pdgBookListListener != null) {
-                            pdgBookListListener.onItemClick(holder);
-                        }
-                    }
-                });
-                holder.ivPage.setOnTouchListener(new View.OnTouchListener() { //rv拿不到里面view的滑动事件，已经被内部view处理了。
-                    private int x;
-                    private int y;
-
+                holder.ivPage.setOnTouchListener(new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
-                        if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                            if (Math.abs(event.getX() - x) > 10 || Math.abs(event.getY() - y) > 10) {  //有时候点击后会有一个move事件影响
-                                if (pdgBookListListener != null) {
-                                    pdgBookListListener.onItemTouchMove(holder);
-                                }
-                            }
-                        } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                            x = (int) event.getX();
-                            y = (int) event.getY();
-                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
-
-                        }
-                        return false;
+                        return gestureDetector.onTouchEvent(event);
                     }
                 });
+                pageGestureListener.setHolder(holder);
             } else {
                 pdgBookListListener.startLoadPage(PDGBookResource.buildLoading(data), position);
                 holder.ivPage.setImage(ImageSource.resource(R.drawable.tranf_image));
@@ -170,9 +152,40 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
 
         void onScaleChange(int position, float scale);
 
-        void onItemClick(PageViewHolder holder);
+        void onItemClick(MotionEvent e,PageViewHolder holder);
 
-        void onItemTouchMove(PageViewHolder holder);
+        void onItemTouchMove();
+    }
+
+
+    public class PageGestureListener extends GestureDetector.SimpleOnGestureListener {
+        private PageViewHolder holder;
+
+        public void setHolder(PageViewHolder holder) {
+            this.holder = holder;
+        }
+
+        public PageGestureListener() {
+            super();
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            Log.i(TAG, "onScroll: ");
+            if (pdgBookListListener != null) {
+                pdgBookListListener.onItemTouchMove();
+            }
+            return super.onScroll(e1, e2, distanceX, distanceY);
+        }
+
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            Log.i(TAG, "onSingleTapConfirmed: ");
+            if (pdgBookListListener != null) {
+                pdgBookListListener.onItemClick(e,holder);
+            }
+            return super.onSingleTapConfirmed(e);
+        }
     }
 
 }

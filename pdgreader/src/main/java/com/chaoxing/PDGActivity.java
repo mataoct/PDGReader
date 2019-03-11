@@ -3,6 +3,7 @@ package com.chaoxing;
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -26,6 +27,7 @@ import com.chaoxing.bean.PDGBookInfo;
 import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.bean.ResourceContentValue;
+import com.chaoxing.bean.Setting;
 import com.chaoxing.util.LogUtils;
 import com.chaoxing.util.ScreenUtils;
 import com.chaoxing.util.ToastManager;
@@ -270,21 +272,53 @@ public class PDGActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onItemClick(PDGBookListAdapter.PageViewHolder holder) {
-            if (rlTitleBar.getVisibility() == View.VISIBLE) {
+        public void onItemClick(MotionEvent e, PDGBookListAdapter.PageViewHolder holder) {
+            if (getLeftFlipRect().contains((int) e.getX(), (int) e.getY())) {  //点击左侧
+                moveToPrePage();
+                hideBar();
+            } else if (getRightFlipRect().contains((int) e.getX(), (int) e.getY())) {
+                moveToNextPage();
                 hideBar();
             } else {
-                showBar();
+                if (rlTitleBar.getVisibility() == View.VISIBLE) {
+                    hideBar();
+                } else {
+                    showBar();
+                }
             }
-            Log.i(TAG, "onItemClick: clickOn");
         }
 
         @Override
-        public void onItemTouchMove(PDGBookListAdapter.PageViewHolder holder) {
+        public void onItemTouchMove() {
             hideBar();
-            Log.i(TAG, "onItemClick: clickMove");
         }
     };
+
+    private void moveToPrePage() {
+        int firstVisibleItemPosition = ((LinearLayoutManager) rvBookView.getLayoutManager()).findFirstVisibleItemPosition();
+        if (firstVisibleItemPosition > 0 && firstVisibleItemPosition < mPageList.size()) {
+            rvBookView.smoothScrollToPosition(firstVisibleItemPosition - 1);
+        }
+    }
+
+    private void moveToNextPage() {
+        int firstVisibleItemPosition = ((LinearLayoutManager) rvBookView.getLayoutManager()).findFirstVisibleItemPosition();
+        if (firstVisibleItemPosition >= 0 && firstVisibleItemPosition < mPageList.size() - 1) {
+            rvBookView.smoothScrollToPosition(firstVisibleItemPosition + 1);
+        }
+    }
+
+    private Rect getLeftFlipRect() {
+        int width = Setting.get().getWidth();
+        int height = Setting.get().getHeight();
+        return new Rect(0, 0, width / 5, height);
+    }
+
+    private Rect getRightFlipRect() {
+        int width = Setting.get().getWidth();
+        int height = Setting.get().getHeight();
+        return new Rect(width / 5 * 4, 0, width, height);
+    }
 
     private void noticfyImageScaleChange(int position, float mScale) {
         if (position > 0 && position < mPageList.size()) {
