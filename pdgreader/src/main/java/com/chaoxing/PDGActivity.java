@@ -26,6 +26,7 @@ import com.chaoxing.bean.Book;
 import com.chaoxing.bean.PDGBookInfo;
 import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
+import com.chaoxing.bean.PageTypeInfo;
 import com.chaoxing.bean.ResourceContentValue;
 import com.chaoxing.bean.Setting;
 import com.chaoxing.util.LogUtils;
@@ -187,33 +188,6 @@ public class PDGActivity extends AppCompatActivity {
         ivLeft.setOnClickListener(new ClickListenr());
     }
 
-    /**
-     * 隐藏和显示顶部和底部bar
-     * 点击需要切换显示和隐藏
-     * 滑动需要隐藏
-     * 滑动因为事件分发的原因，所以分为滑动rv和滑动imageview(放大后，处理)
-     */
-
-    private void hideBar() {
-//        if (rlTitleBar.getVisibility() == View.GONE) {
-//            return;
-//        }
-//        rlTitleBar.setVisibility(View.GONE);
-//        llBottomBar.setVisibility(View.GONE);
-        showView(llBottomBar, false, 1);
-        showView(rlTitleBar, false, -1);
-    }
-
-    private void showBar() {
-//        if (rlTitleBar.getVisibility() == View.VISIBLE) {
-//            return;
-//        }
-//        rlTitleBar.setVisibility(View.VISIBLE);
-//        llBottomBar.setVisibility(View.VISIBLE);
-        showView(rlTitleBar, true, -1);
-        showView(llBottomBar, true, 1);
-    }
-
 
     private void initData() {
         mBookViewModel.initBook().observe(this, new Observer<PDGBookResource>() {
@@ -228,6 +202,16 @@ public class PDGActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void hideBar() {
+        showView(rlTitleBar, false, -1);
+        showView(llBottomBar, false, 1);
+    }
+
+    private void showBar() {
+        showView(rlTitleBar, true, -1);
+        showView(llBottomBar, true, 1);
     }
 
     private void setBookTitle() {
@@ -527,66 +511,35 @@ public class PDGActivity extends AppCompatActivity {
     }
 
     private void initBookPages() {
-
         PDGBookInfo bookInfo = mBookViewModel.getBookInfo();
         Book metaData = bookInfo.getMetaData();
         int pageNum = metaData.getPageNum();
         PDGPageInfo pageInfo;
-        for (int i = bookInfo.getStartPage(); i <= pageNum; i++) {
-            pageInfo = buildPage(i, bookInfo);
-            mPageList.add(PDGBookResource.buildIdie(pageInfo));
-        }
-    }
-
-    /**
-     * 构建页码，
-     *
-     * @param pageNo
-     * @param bookInfo
-     * @return
-     */
-    private PDGPageInfo buildPage(int pageNo, PDGBookInfo bookInfo) {
-        PDGPageInfo pageInfo = new PDGPageInfo();
-        pageInfo.setFilePath(path);
-        pageInfo.setPageNo(pageNo);
-        pageInfo.setPageType(6);
-        if (bookInfo.getPageTypeInfos().size() < 1) {
-            if (bookInfo.getStartPage() > pageNo) {
-                return null;
-            } else if (bookInfo.getMetaData().getPageNum() > 0 && pageNo > bookInfo.getMetaData().getPageNum()) {
-                return null;
-            } else {
-                return pageInfo;
-            }
-        }
-
-        if (bookInfo.getStartPage() > pageNo) {
-            for (int i = pageInfo.getPageType() - 1; i > 0; i--) {
-                int pageNum = bookInfo.getPageTypeInfos().get(i).getPageNum();
-                if (pageNum > 0) {
-                    pageInfo.setPageNo(pageInfo.getPageNo() - bookInfo.getStartPage() + 1 + pageNum);
-                }
-                if (pageInfo.getPageNo() > 0) {
-                    pageInfo.setPageType(i);
-                    return pageInfo;
+        int startPage = bookInfo.getStartPage();
+        List<PageTypeInfo> pageTypeInfos = bookInfo.getPageTypeInfos();
+        int startPageNum = 0;
+        boolean findStartPage = false;
+        if (pageTypeInfos != null && pageTypeInfos.size() > 0) {
+            for (int i = 1; i < pageTypeInfos.size(); i++) {
+                PageTypeInfo pageTypeInfo = pageTypeInfos.get(i);
+                if (pageTypeInfo.getPageNum() > 0) {
+                    for (int j = pageTypeInfo.getStartPage(); j < pageTypeInfo.getPageNum(); j++) {
+                        if (pageTypeInfo.getPageType() == 6 && j == startPage) { //正文开始页
+                            findStartPage = true;
+                        }
+                        if (!findStartPage) {   //找到正文开始页
+                            startPageNum++;
+                        }
+                        pageInfo = new PDGPageInfo();
+                        pageInfo.setFilePath(path);
+                        pageInfo.setPageNo(j);
+                        pageInfo.setPageType(pageTypeInfo.getPageType());
+                        mPageList.add(PDGBookResource.buildIdie(pageInfo));
+                    }
                 }
             }
-            return null;
-        } else if (pageNo > bookInfo.getPageInfos()[pageInfo.getPageType()]) {
-            for (int i = pageInfo.getPageType() + 1; i <= bookInfo.getPageTypeInfos().size(); i++) {
-                int pageNum = bookInfo.getPageTypeInfos().get(i).getPageNum();
-                if (pageNum > 0) {
-                    pageInfo.setPageNo(pageInfo.getPageNo() + bookInfo.getStartPage() - 1 - pageNo);
-                }
-                if (pageInfo.getPageNo() <= bookInfo.getPageInfos()[pageInfo.getPageType()] + bookInfo.getStartPage() - 1) {
-                    pageInfo.setPageType(i);
-                    return pageInfo;
-                }
-            }
-            return null;
-        } else {
-            return pageInfo;
         }
+        rvBookView.scrollToPosition(startPageNum);
     }
 
     private class ClickListenr implements View.OnClickListener {

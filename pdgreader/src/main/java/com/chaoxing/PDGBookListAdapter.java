@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import com.chaoxing.bean.PDGBookResource;
 import com.chaoxing.bean.PDGPageInfo;
 import com.chaoxing.bean.ResourceContentValue;
+import com.chaoxing.bean.Setting;
 import com.chaoxing.util.LogUtils;
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.ImageViewState;
@@ -25,13 +26,14 @@ import java.util.List;
 
 public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.PageViewHolder> {
 
-    private static final String TAG = LogUtils.TAG + "2";
+    private static final String TAG = LogUtils.TAG;
     private final LayoutInflater mInflate;
     private List<PDGBookResource<PDGPageInfo>> mPageInfo;
     private Context mContext;
     private float mScale;  //缩放倍数
     private PageGestureListener pageGestureListener = new PageGestureListener();
     private GestureDetector gestureDetector;
+    private Bitmap mEmptyBitmap;
 
     public PDGBookListAdapter(List<PDGBookResource<PDGPageInfo>> mPageInfo, Context mContext) {
         this.mPageInfo = mPageInfo;
@@ -41,6 +43,7 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
         }
         mInflate = LayoutInflater.from(mContext);
         gestureDetector = new GestureDetector(mContext, pageGestureListener);
+        mEmptyBitmap = Bitmap.createBitmap(Setting.get().getWidth(), Setting.get().getHeight(), Bitmap.Config.RGB_565);
     }
 
     @NonNull
@@ -70,14 +73,14 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
                 pageGestureListener.setHolder(holder);
             } else {
                 pdgBookListListener.startLoadPage(PDGBookResource.buildLoading(data), position);
-                holder.ivPage.setImage(ImageSource.resource(R.drawable.tranf_image));
+                holder.ivPage.setImage(ImageSource.bitmap(mEmptyBitmap), new ImageViewState(1, new PointF(0, 0), 0));
             }
         } else if (resource.getStatus() == ResourceContentValue.RESOURCE_STATUS.ERROR) {
-            holder.ivPage.setImage(ImageSource.resource(R.drawable.tranf_image));
+            holder.ivPage.setImage(ImageSource.bitmap(mEmptyBitmap), new ImageViewState(1, new PointF(0, 0), 0));
         } else {
             pdgBookListListener.startLoadPage(resource, position);
             holder.pb_loading.setVisibility(View.VISIBLE);
-            holder.ivPage.setImage(ImageSource.resource(R.drawable.tranf_image));
+            holder.ivPage.setImage(ImageSource.bitmap(mEmptyBitmap), new ImageViewState(1, new PointF(0, 0), 0));
         }
 
     }
@@ -152,7 +155,7 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
 
         void onScaleChange(int position, float scale);
 
-        void onItemClick(MotionEvent e,PageViewHolder holder);
+        void onItemClick(MotionEvent e, PageViewHolder holder);
 
         void onItemTouchMove();
     }
@@ -182,7 +185,7 @@ public class PDGBookListAdapter extends RecyclerView.Adapter<PDGBookListAdapter.
         public boolean onSingleTapConfirmed(MotionEvent e) {
             Log.i(TAG, "onSingleTapConfirmed: ");
             if (pdgBookListListener != null) {
-                pdgBookListListener.onItemClick(e,holder);
+                pdgBookListListener.onItemClick(e, holder);
             }
             return super.onSingleTapConfirmed(e);
         }
